@@ -36,7 +36,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   event_bloc: ^4.3.3
-  random_words: ^1.0.2
   timer_builder: ^2.0.0
   percent_indicator: ^4.2.3
 

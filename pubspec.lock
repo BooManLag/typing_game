@@ -163,14 +163,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.5"
-  random_words:
-    dependency: "direct main"
-    description:
-      name: random_words
-      sha256: "773dc99557b8b870227bee81178069b85a3e5b0739bad2798c735054c723b41d"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.2"
   sky_engine:
     dependency: transitive
     description: flutter
