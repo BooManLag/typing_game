@@ -29,7 +29,7 @@ class WordGenerator {
 
   final Random _random = Random();
 
-  Word generateWord() {
+  Word generateWord(int minimumLength) {
     int length = _random.nextInt(6) + 4;
     String word = '';
     bool nextLetterIsConsonant = _random.nextBool();
@@ -49,7 +49,7 @@ class WordGenerator {
     for (int i = 0; i < wordGroupSize; i++) {
       Word newWord;
       do {
-        newWord = generateWord();
+        newWord = generateWord(minimumLength);
       } while (newWord.word.length < minimumLength);
       words.add(newWord);
     }
