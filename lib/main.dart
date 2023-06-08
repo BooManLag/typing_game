@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:typing_game/blocs/typing_game_bloc.dart';
 import 'package:typing_game/widgets/typing_game.dart';
 
+import 'events/bloc_event_channel.dart';
+
 void main() {
   runApp(
     BlocProvider<TypingGameBloc>(
-      create: (context, channel) => TypingGameBloc(channel, parentChannel: channel),
+      create: (context, channel) =>
+          TypingGameBloc(channel, parentChannel: MyEventChannel()),
       child: const MyApp(),
     ),
   );
@@ -25,4 +28,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
