@@ -5,7 +5,8 @@ import 'package:typing_game/models/word.dart';
 class WordGroupWidget extends StatelessWidget {
   final TypingGameBloc typingGameBloc;
 
-  const WordGroupWidget({required this.typingGameBloc, required String userInput});
+  const WordGroupWidget(
+      {super.key, required this.typingGameBloc, required String userInput});
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +29,8 @@ class WordGroupWidget extends StatelessWidget {
                     direction: Axis.horizontal,
                     children: word.word.split('').asMap().entries.map((e) {
                       bool hasTyped = typingGameBloc.userInput.length > e.key;
-                      bool isCorrect =
-                          hasTyped && typingGameBloc.userInput[e.key] == e.value;
+                      bool isCorrect = hasTyped &&
+                          typingGameBloc.userInput[e.key] == e.value;
                       Color color;
                       if (isCurrentWord) {
                         if (hasTyped) {
@@ -48,7 +49,7 @@ class WordGroupWidget extends StatelessWidget {
                         ),
                         child: Text(
                           e.value,
-                          style: TextStyle(fontSize: 20),
+                          style: const TextStyle(fontSize: 20),
                         ),
                       );
                     }).toList(),
@@ -56,7 +57,7 @@ class WordGroupWidget extends StatelessWidget {
                 }).toList(),
               );
             } else {
-              return CircularProgressIndicator();
+              return const CircularProgressIndicator();
             }
           },
         );
