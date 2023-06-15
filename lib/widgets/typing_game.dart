@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:typing_game/blocs/typing_game_bloc.dart';
 import 'package:typing_game/models/word.dart';
@@ -39,6 +41,12 @@ class _TypingGameState extends State<TypingGame> {
   }
 
   @override
+  void dispose() {
+    _textEditingController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -47,14 +55,25 @@ class _TypingGameState extends State<TypingGame> {
           typingGameBloc: widget.typingGameBloc,
           userInput: _userInput, // Pass the user input to WordGroupWidget
         ),
-        const SizedBox(height: 20.0),
-        InputFieldWidget(
-          typingGameBloc: widget.typingGameBloc,
-          textEditingController: _textEditingController,
+        const SizedBox(height: 150.0),
+        SizedBox(
+          width: 450,
+          height: 100,
+          child: InputFieldWidget(
+            typingGameBloc: widget.typingGameBloc,
+            textEditingController: _textEditingController,
+          ),
         ),
         const SizedBox(height: 20.0),
         // Display the current score
-        Text('Score: ${widget.typingGameBloc.calculateFinalScore()}'),
+        StreamBuilder<int>(
+          stream: widget.typingGameBloc.scoreStream,
+          initialData: 0,
+          builder: (context, snapshot) {
+            final score = snapshot.data ?? 0;
+            return Text('Score: $score', style: const TextStyle(fontSize: 20));
+          },
+        ),
         const SizedBox(height: 20.0),
         // Accuracy widget
         AccuracyWidget(typingGameBloc: widget.typingGameBloc),
@@ -63,7 +82,10 @@ class _TypingGameState extends State<TypingGame> {
         TimerWidget(typingGameBloc: widget.typingGameBloc),
         const SizedBox(height: 20.0),
         // End game button
-        EndGameButton(onEndGame: widget.typingGameBloc.endGame),
+        EndGameButton(
+          typingGameBloc: widget.typingGameBloc,
+          textEditingController: _textEditingController,
+        ),
       ],
     );
   }

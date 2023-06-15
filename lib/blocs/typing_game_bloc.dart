@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:event_bloc/event_bloc.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:typing_game/models/word.dart';
 import 'package:typing_game/utils/word_generator.dart';
 
@@ -14,14 +15,19 @@ class TypingGameBloc extends Bloc {
   int _totalWordsTyped = 0;
   int _accuracy = 100;
   int get accuracy => _accuracy;
+  int _finalAccuracy = 100;
+  int _finalScore = 0;
+  int get finalAccuracy => _finalAccuracy;
+  int get finalScore => _finalScore;
   List<Word> _wordGroup = [];
   int _totalKeyPresses = 0;
   int _correctKeyPresses = 0;
+  TextEditingController _textEditingController = TextEditingController();
 
   int _timePassed = 0;
   Timer _timer = Timer.periodic(const Duration(seconds: 1), (timer) {});
   final StreamController<int> _timerStreamController =
-  StreamController<int>.broadcast();
+      StreamController<int>.broadcast();
 
   int get timePassed => _timePassed;
   Stream<int> get timerStream => _timerStreamController.stream;
@@ -30,7 +36,7 @@ class TypingGameBloc extends Bloc {
   final int _wordGroupSize = 3;
   final WordGenerator _wordGenerator = WordGenerator();
   final StreamController<List<Word>> _wordGroupController =
-  StreamController<List<Word>>.broadcast();
+      StreamController<List<Word>>.broadcast();
 
   Stream<List<Word>> get wordGroupStream => _wordGroupController.stream;
 
@@ -44,18 +50,30 @@ class TypingGameBloc extends Bloc {
 
   String? _currentWord;
   final StreamController<String> _currentWordController =
-  StreamController<String>.broadcast();
+      StreamController<String>.broadcast();
   Stream<String> get currentWordStream => _currentWordController.stream;
 
   final StreamController<bool> _wordCompletedStreamController =
-  StreamController<bool>.broadcast();
+      StreamController<bool>.broadcast();
   Stream<bool> get wordCompletedStream => _wordCompletedStreamController.stream;
+
+  final StreamController<int> _scoreStreamController =
+      StreamController<int>.broadcast();
+  Stream<int> get scoreStream => _scoreStreamController.stream;
+
+  final StreamController<int> _finalAccuracyStreamController =
+      StreamController<int>.broadcast();
+  Stream<int> get finalAccuracyStream => _finalAccuracyStreamController.stream;
+
+  final StreamController<int> _accuracyStreamController =
+      StreamController<int>.broadcast();
+  Stream<int> get accuracyStream => _accuracyStreamController.stream;
 
   @override
   BlocEventChannel get eventChannel => MyEventChannel();
 
   final StreamController<bool> _isIncorrectInputStreamController =
-  StreamController<bool>.broadcast();
+      StreamController<bool>.broadcast();
   Stream<bool> get isIncorrectInputStream =>
       _isIncorrectInputStreamController.stream;
 
@@ -63,14 +81,15 @@ class TypingGameBloc extends Bloc {
   bool get isIncorrectInput => _isIncorrectInput;
 
   TypingGameBloc(
-      BlocEventChannel? channel, {
-        required BlocEventChannel parentChannel,
-        BlocEventChannel? eventChannel,
-      }) : super(parentChannel: parentChannel) {
+    BlocEventChannel? channel, {
+    required BlocEventChannel parentChannel,
+    BlocEventChannel? eventChannel,
+  }) : super(parentChannel: parentChannel) {
+    _accuracyStreamController.add(_accuracy);
     eventChannel?.addEventListener(
         RESET_GAME_EVENT as BlocEventType<Object?>, (_, __) => resetGame());
     eventChannel?.addEventListener(KEY_PRESS_EVENT as BlocEventType<String>,
-            (_, key) => handleKeyPress(key));
+        (_, key) => handleKeyPress(key));
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _timePassed++;
@@ -103,7 +122,6 @@ class TypingGameBloc extends Bloc {
   }
 
   bool checkUserInput(String userInput, String word) {
-    // If userInput and word are same, then return true
     if (userInput == word) {
       _correctKeyPresses++; // Increase correct key presses if the word is correct
       _totalKeyPresses++; // Increase total key presses if the input is correct
@@ -113,15 +131,15 @@ class TypingGameBloc extends Bloc {
       _isIncorrectInputStreamController.add(false);
       _wordCompletedStreamController
           .add(true); // This notifies the UI that the word is completed
+
+      // Update the score stream
+      _scoreStreamController.add(_score);
+
       return true;
-    }
-    // If userInput is the beginning part of the word, then it's partially correct so don't count it as wrong
-    else if (word.startsWith(userInput)) {
+    } else if (word.startsWith(userInput)) {
       _isIncorrectInputStreamController.add(false);
       return false;
-    }
-    // If userInput is wrong (doesn't match with the start of the word)
-    else {
+    } else {
       _totalKeyPresses++; // Increase total key presses if the input is wrong
       _isIncorrectInputStreamController.add(true);
       return false;
@@ -131,7 +149,7 @@ class TypingGameBloc extends Bloc {
   void generateWordGroup() {
     _wordGroup = List.generate(
       _wordGroupSize,
-          (_) => _wordGenerator.generateWord(_minimumLength),
+      (_) => _wordGenerator.generateWord(_minimumLength),
     );
     _wordGroupController.add(_wordGroup);
     _currentWord = _wordGroup[0].word;
@@ -143,18 +161,19 @@ class TypingGameBloc extends Bloc {
   void calculateAccuracy() {
     _accuracy = (_correctKeyPresses > 0 && _totalKeyPresses > 0)
         ? ((_correctKeyPresses / _totalKeyPresses) * 100).round()
-        : 100; // This calculation now uses the number of correct key presses and total key presses
+        : 100;
+    _accuracyStreamController.add(_accuracy); // Update the accuracy stream
     updateBloc();
-  }
-
-  int calculateFinalScore() {
-    return (_score * _accuracy) ~/ 100;
   }
 
   void resetGame() {
     _score = 0;
     _totalWordsTyped = 0;
-    _accuracy = 100;
+    _correctKeyPresses = 0;
+    _totalKeyPresses = 0;
+    _userInput = ''; // Clear the user input
+    _accuracy = 100; // Reset the accuracy to 100
+    _accuracyStreamController.add(_accuracy); // Update the accuracy stream
     _timer.cancel();
     _timePassed = 0;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -163,11 +182,15 @@ class TypingGameBloc extends Bloc {
       _timerStreamController.add(_timePassed);
     });
     generateWordGroup(); // Generate word group here
+    _scoreStreamController.add(_score); // Update the score stream with the new score
   }
+
 
   void endGame() {
     _timer.cancel();
-    _score = calculateFinalScore();
+    _finalAccuracy = _accuracy; // Store the current accuracy as the final accuracy
+    _finalScore = _score; // Store the current score as the final score
+    _score = 0; // Reset the score to 0
     resetGame();
   }
 
@@ -178,6 +201,9 @@ class TypingGameBloc extends Bloc {
     _wordGroupController.close();
     _isIncorrectInputStreamController.close();
     _wordCompletedStreamController.close();
+    _scoreStreamController.close();
+    _finalAccuracyStreamController
+        .close(); // Close the finalAccuracyStreamController
     super.dispose();
   }
 }
